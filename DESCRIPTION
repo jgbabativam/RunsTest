@@ -1,0 +1,23 @@
+Package: RankRunsTest
+Type: Package
+Title: Nonparametric test based on rank and runs 
+Version: 0.1.0
+Authors@R: 
+    person(given = "Giovany",
+           family = "Babativa",
+           role = c("aut", "cre"),
+           email = "gbabativam@gmail..com",
+           comment = c(ORCID = "https://orcid.org/0000-0002-4989-7459"))
+Maintainer: The package maintainer <gbabativam@gmail.com>
+Depends:
+    R (>= 3.5),
+    dplyr,
+    ggplot2 (>= 3.0.0),
+    ggpubr,
+    tidyr,
+    randtests
+Description: RankRunsTest is a package that implements of a large number of tests for location, scale and symmetry test, with possibility of calculation of empirical power by Monte Carlo techniques. 
+License: GLP (>= 2)
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.2
