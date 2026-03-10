@@ -33,7 +33,7 @@
 #' #--- Choose any test
 #' (Jk_test <- symmetry_test(x, stat = "Jk", Jk = 6))
 #' #--- Choose severals tests
-#' (MyTest1 <- symmetry_test(x, stat = c("Bk", "Jk"), Bk = 5, Jk = 6))
+#' (MyTest1 <- symmetry_test(x, stat = c("Bk", "Jk"), Bk = c(5, 10), Jk = 6))
 #' (MyTest2 <- symmetry_test(x, stat = c("Mp", "Jk"), Jk = 6, Mp = c(10, 20, 25)))
 
 power_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
@@ -89,7 +89,7 @@ power_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
   on.exit(parallel::stopCluster(cl), add = TRUE)
   
   parallel::clusterExport(cl,
-                          varlist = c("symmetry_testOP", "statis", "Bk", "Jk", "type",
+                          varlist = c("symmetry_test", "statis", "Bk", "Jk", "type",
                                       "alpha", "ni", "crit", "compute_reject"),
                           envir = environment())
   parallel::clusterEvalQ(cl, {
@@ -102,7 +102,7 @@ power_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
     
     # Todas las réplicas de una distribución juntas
     result <- apply(x, 2, function(y) {
-      symmetry_testOP(y, statis = statis, Bk = Bk, Jk = Jk, type = type)
+      symmetry_test(y, statis = statis, Bk = Bk, Jk = Jk, type = type)
     })
     
     dplyr::bind_rows(result) %>%
