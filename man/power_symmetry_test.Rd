@@ -13,51 +13,65 @@ power_symmetry_test(
   alpha = 0.05,
   nsize,
   rep,
-  plot = TRUE
+  plot = TRUE,
+  ncores = NULL
 )
 }
 \arguments{
-\item{data}{data frame or tribble with name and lambda parameters of the DLG.}
+\item{data}{data frame or tribble with the case name and the four lambda parameters of the GLD.}
 
-\item{statis}{Test statistic to be used. By default \code{stat = c("Bk", "Jk")}}
+\item{statis}{Test statistic to be used. By default \code{statis = c("Bk", "Jk")}.
+Available options are \code{"Bk"}, \code{"Bkc"}, \code{"Jk"}, \code{"R"}, \code{"Rs"}, \code{"Mp"}.}
 
-\item{type}{Type of test. When the test is with know median, select \code{type = "k"} else \code{type = "u"} for unknown median.}
+\item{Bk}{Integer or vector of integers with the cut-off parameter(s) for the \eqn{B_k} statistic.
+By default \code{Bk = 5}. Multiple values can be supplied, e.g. \code{Bk = c(5, 6, 7)}.}
 
-\item{alpha}{Size of test. By default \eqn{\alpha = 0.05}}
+\item{Jk}{Integer or vector of integers with the cut-off parameter(s) for the \eqn{J_k} statistic.
+By default \code{Jk = 6}. Multiple values can be supplied, e.g. \code{Jk = c(4, 6, 8)}.}
 
-\item{nsize}{Sample Size.}
+\item{type}{Type of test. When the test is with known median, select \code{type = "k"};
+use \code{type = "u"} for unknown median (estimated from the data).}
+
+\item{alpha}{Significance level of the test. By default \eqn{\alpha = 0.05}.}
+
+\item{nsize}{Sample size for each Monte Carlo replicate.}
 
 \item{rep}{Number of replicates for the Monte Carlo process.}
 
-\item{plot}{draw empirical power function with results.}
+\item{plot}{Logical. If \code{TRUE} (default), draws the empirical power function.}
+
+\item{ncores}{Number of cores to use for parallel computation. By default \code{ncores = NULL},
+which automatically uses all available cores minus one.}
 }
 \value{
-A data frame with empirical powers for the test
+A data frame with empirical powers for each test statistic and distribution.
 }
 \description{
-This function compute the empirical power using Monte Carlo methods for a large number of tests for symmetry with known median. To see the available tests, see
-details.
+This function computes the empirical power using Monte Carlo methods for a large number of
+tests for symmetry with known median. To see the available tests, see details.
 }
 \details{
-Compute empirical power on tribble or data frame that contains the distributions of the DLG.
+Computes empirical power on a tribble or data frame that contains the parameters of the
+Generalised Lambda Distribution (GLD).
 Jk: Corzo, J. and Babativa, G. (2013),
 R: McWiliams, P. (1990),
-Rs: Baklizi, A. (2003)
+Rs: Baklizi, A. (2003),
 Mp: Modarres and Gastwirth (1996).
 }
 \examples{
-x <- rnorm(20)
-#--- All test
-(test <- symmetry_test(x))
-#--- Choose any test
-(Jk_test <- symmetry_test(x, stat = "Jk", Jk = 6))
-#--- Choose severals tests
-(MyTest1 <- symmetry_test(x, stat = c("Bk", "Jk"), Bk = 5, Jk = 6))
-(MyTest2 <- symmetry_test(x, stat = c("Mp", "Jk"), Jk = 6, Mp = c(10, 20, 25)))
+\dontrun{
+distributions <- tibble::tribble(
+  ~case,     ~lambda1, ~lambda2, ~lambda3, ~lambda4,
+  "Case 1A",        0, 0.197454, 0.134915, 0.134915
+)
+P20 <- power_symmetry_test(data = distributions, statis = c("Bk", "Jk"),
+                           Bk = 5, Jk = 6, alpha = 0.05, nsize = 20, rep = 1000, plot = FALSE)
+}
 }
 \references{
-Corzo, J., & Babativa, G. (2013). A modified runs test for symmetry. Journal of Statistical Computation and Simulation, 83(5), 984-991.
+Corzo, J., & Babativa, G. (2013). A modified runs test for symmetry. Journal of Statistical
+Computation and Simulation, 83(5), 984-991.
 }
 \author{
-Giovany Babativa <gbabativam@gmail.com>
+Giovany Babativa <jgbabativam@unal.edu.co>
 }

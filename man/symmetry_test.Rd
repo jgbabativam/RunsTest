@@ -18,15 +18,25 @@ symmetry_test(
 \arguments{
 \item{x}{vector of numeric information.}
 
-\item{statis}{Test statistic to be used. By default \code{stat = c("Bk", "Jk")}}
+\item{statis}{Test statistic to be used. By default \code{statis = c("Bk", "Jk")}.
+Available options are \code{"Bk"}, \code{"Bkc"}, \code{"Jk"}, \code{"R"}, \code{"Rs"}, \code{"Mp"}.}
 
-\item{type}{Type of test. When the test is with know median, select \code{type = "k"} else \code{type = "u"} for unknown median.}
+\item{type}{Type of test. When the test is with known median, select \code{type = "k"};
+use \code{type = "u"} for unknown median (estimated from the data).}
 
-\item{Bk}{Parameter of \eqn{B_k} statistic. By default \code{Bk = 5}}
+\item{Bk}{Integer or vector of integers with the cut-off parameter(s) for the \eqn{B_k} statistic.
+By default \code{Bk = 5}. Multiple values can be supplied, e.g. \code{Bk = c(5, 6, 7)}.}
 
-\item{Jk}{Parameter of \eqn{J_k} statistic. By default \code{Jk = 6}}
+\item{Jk}{Integer or vector of integers with the cut-off parameter(s) for the \eqn{J_k} statistic.
+By default \code{Jk = 6}. Multiple values can be supplied, e.g. \code{Jk = c(4, 6, 8)}.}
 
-\item{median}{The centre parameter around which to test symmetry. By default \code{median=0}}
+\item{Bkc}{Integer with the cut-off parameter for the \eqn{B_{kc}} statistic, which uses
+the conditional runs distribution. By default \code{Bkc = 11}.}
+
+\item{Mp}{Numeric vector with percentile trimming values (in percent) for the \eqn{M_p} statistic.
+By default \code{Mp = c(10, 20, 25)}.}
+
+\item{median}{The centre parameter around which to test symmetry. By default \code{median = 0}.}
 }
 \value{
 A data frame with statistical values and p.values
@@ -44,12 +54,12 @@ Mp: Modarres and Gastwirth (1996).
 }
 \examples{
 x <- rnorm(20)
-#--- All test
+#--- All tests
 (test <- symmetry_test(x))
 #--- Choose any test
 (Jk_test <- symmetry_test(x, statis = "Jk", Jk = 6))
-#--- Choose severals tests
-(MyTest1 <- symmetry_test(x, statis = c("Bk", "Jk"), Bk = 5, Jk = 6))
+#--- Choose several tests with multiple cut-offs
+(MyTest1 <- symmetry_test(x, statis = c("Bk", "Jk"), Bk = c(5, 7), Jk = c(6, 8)))
 (MyTest2 <- symmetry_test(x, statis = c("Mp", "Jk"), Jk = 6, Mp = c(10, 20, 25)))
 }
 \references{
