@@ -31,132 +31,109 @@
 #' #--- Choose any test
 #' (Jk_test <- symmetry_test(x, statis = "Jk", Jk = 6))
 #' #--- Choose severals tests
-#' (MyTest1 <- symmetry_test(x, statis = c("Bk", "Jk"), Bk = 5, Jk = 6))
+#' (MyTest1 <- symmetry_test(x, statis = c("Bk", "Jk"),  Bk = c(5, 7), Jk = c(6, 8)))
 #' (MyTest2 <- symmetry_test(x, statis = c("Mp", "Jk"), Jk = 6, Mp = c(10, 20, 25)))
 
+
 symmetry_test <- function(x, statis = c("Bk", "Jk", "R", "Rs", "Mp", "Bkc"), type = "k",
-                          Bk = 5, Jk = 6, Bkc = 11, Mp = c(10, 20, 25), median = 0){
-
-  if(type == "u") median <- median(x)
-
-  df <- data.frame(x) %>%
-        mutate(xabs = abs(x-median),
-               si = (sign(x-median)+1)/2) %>%
-        arrange(xabs) %>%
-        mutate(indj = row_number(),
-               Ij = ifelse(indj == 1, 1,
-                           ifelse(lag(si)==si,0, 1)),
-               j = length(x)-indj+1)
-
+                            Bk = 5, Jk = 6, Bkc = 11, Mp = c(10, 20, 25), median = 0) {
+  
+  if (type == "u") median <- median(x)
+  
   n <- length(x)
-  stats = list()
-
-  if("Bk" %in% statis) {
-    stat <- "Bk"
-    svBk  <- df %>%
-             dplyr::filter(j <= Bk ) %>% dplyr::select(Ij) %>%
-             sum()
-    stat.value <- svBk + 1
-    p.value <- sum(stats::dbinom(0:svBk, Bk, 0.5))
-    out <- data.frame(stat = stat, stat.value=round(stat.value,1), p.value = round(p.value,4))
-    out$stat <- as.character(out$stat)
-    stats[[1]] <- out
+  
+  # --- Precálculos ---
+  xc   <- x - median
+  xabs <- abs(xc)
+  si   <- (sign(xc) + 1) / 2
+  ord  <- order(xabs)
+  si   <- si[ord]
+  indj <- seq_len(n)
+  j    <- n - indj + 1
+  Ij   <- c(1L, as.integer(diff(si) != 0))
+  
+  df <- data.frame(indj = indj, j = j, si = si, Ij = Ij)
+  
+  make_row <- function(stat, stat.value, p.value) {
+    data.frame(stat       = stat,
+               stat.value = round(stat.value, 1),
+               p.value    = round(p.value, 4),
+               stringsAsFactors = FALSE)
   }
-
-  if("Bkc" %in% statis) {
-    stat <- "Bkc"
-    temp  <- df %>%
-             dplyr::filter(j <= Bkc) %>%
-             dplyr::select(si, Ij) %>%
-             summarise(svBkc = sum(Ij), n1 = sum(si), n0 = n() - n1)
-
-    stat.value <- temp$svBkc + 1
-    n1 <- temp$n1
-    n0 <- temp$n0
-
-    p.value <- sum(druns(0:stat.value - 1, n1, n0))
-    out <- data.frame(stat = stat, stat.value=round(stat.value,1), p.value = round(p.value,4))
-    out$stat <- as.character(out$stat)
-    stats[[1]] <- out
-  }
-
-  if("Jk" %in% statis) {
-    stat <- "Jk"
-    svJk  <- df %>%
-             dplyr::filter(j <= Jk ) %>% mutate(Ji = indj*Ij) %>% dplyr::select(Ji) %>%
-             sum()
-    EJk <- 1/4 * Jk * (2 * n - Jk + 1)
-    VJk <- 1/24 * Jk * (6 * n^2 + 6 * n + 2 * Jk^2 - 3 * Jk - 6 * n * Jk + 1)
-
-    stat.value <- svJk + 1
-    p.value <- stats::pnorm((svJk-EJk)/sqrt(VJk))
-    out <- data.frame(stat = stat, stat.value=round(stat.value,1), p.value = round(p.value,4))
-    out$stat <- as.character(out$stat)
-    stats[[2]] <- out
-  }
-
-  if("R" %in% statis) {
-    stat <- "R"
-    svR  <- df %>%
-      dplyr::filter(indj >=  2) %>% dplyr::select(Ij) %>%
-      sum()
-
-    stat.value <- svR + 1
-    p.value <- sum(stats::dbinom(0:svR, n-1, 0.5))
-    out <- data.frame(stat = stat, stat.value=round(stat.value,1), p.value = round(p.value,4))
-    out$stat <- as.character(out$stat)
-    stats[[3]] <- out
-  }
-
-  if("Rs" %in% statis) {
-    stat <- "Rs"
-    res  <-  df %>%
-             dplyr::select(si, Ij) %>%
-             summarise(svRs = sum(Ij), n1 = sum(si))
-
-    stat.value <- res$svRs
-    n1 <- res$n1
-    n0 <- n - n1
-
-    ERs <- 1 + (2 * n0 * n1)/ n
-    VRs <-  (2 * n0 * n1)*(2 * n0 * n1 - n)/(n^2 * (n - 1))
-
-    p.value <- stats::pnorm((stat.value-ERs)/sqrt(VRs))
-
-    out <- data.frame(stat = stat, stat.value=round(stat.value,1), p.value = round(p.value,4))
-    out$stat <- as.character(out$stat)
-    stats[[4]] <- out
-  }
-
-  if("Mp" %in% statis) {
-    ps <- length(Mp)
-    it <- 4
-    for (p in Mp) {
-     stat <- paste0("M", p)
-
-     np <- trunc(n * p/100)
-     svMp  <- df %>%
-              dplyr::filter(indj >=  np + 2) %>%
-              mutate(phiIk = (indj - np) * Ij) %>%
-              dplyr::select(phiIk) %>%
-              sum()
-
-     EMp <- 1/4 * (n * (1 - p/100) - 1)*(n * (1- p/100) + 2)
-     VMp <- 1/24 * (n * (1 - p/100) - 1)*(2 * n^2 * (1 - p/100)^2 + 5 * n * (1 - p/100) + 6)
-
-     p.value <- stats::pnorm((svMp-EMp)/sqrt(VMp))
-     out <- data.frame(stat = stat, stat.value=round(svMp,1), p.value = round(p.value,4))
-     out$stat <- as.character(out$stat)
-     it <- it + 1
-     stats[[it]] <- out
+  
+  stats <- list()
+  
+  # --- Bk (múltiples cortes) ---
+  if ("Bk" %in% statis) {
+    for (k in Bk) {
+      mask <- df$j <= k
+      svBk <- sum(df$Ij[mask])
+      stats[[paste0("Bk", k)]] <- make_row(paste0("Bk", k),
+                                           svBk + 1,
+                                           sum(stats::dbinom(0:svBk, k, 0.5)))
     }
   }
-  out <- dplyr::bind_rows(stats)
-  return(out)
-
+  
+  # --- Bkc ---
+  if ("Bkc" %in% statis) {
+    sub      <- df[df$j <= Bkc, ]
+    svBkc    <- sum(sub$Ij)
+    n1       <- sum(sub$si);  n0 <- nrow(sub) - n1
+    stat.val <- svBkc + 1
+    stats[["Bkc"]] <- make_row("Bkc",
+                               stat.val,
+                               sum(druns(seq_len(stat.val) - 1, n1, n0)))
+  }
+  
+  # --- Jk (múltiples cortes) ---
+  if ("Jk" %in% statis) {
+    for (k in Jk) {
+      mask <- df$j <= k
+      svJk <- sum(df$indj[mask] * df$Ij[mask])
+      EJk  <- k * (2*n - k + 1) / 4
+      VJk  <- k * (6*n^2 + 6*n + 2*k^2 - 3*k - 6*n*k + 1) / 24
+      stats[[paste0("Jk", k)]] <- make_row(paste0("Jk", k),
+                                           svJk + 1,
+                                           stats::pnorm((svJk - EJk) / sqrt(VJk)))
+    }
+  }
+  
+  # --- R ---
+  if ("R" %in% statis) {
+    svR <- sum(df$Ij[df$indj >= 2])
+    stats[["R"]] <- make_row("R",
+                             svR + 1,
+                             sum(stats::dbinom(0:svR, n - 1, 0.5)))
+  }
+  
+  # --- Rs ---
+  if ("Rs" %in% statis) {
+    svRs <- sum(df$Ij)
+    n1   <- sum(df$si);  n0 <- n - n1
+    ERs  <- 1 + (2*n0*n1) / n
+    VRs  <- (2*n0*n1) * (2*n0*n1 - n) / (n^2 * (n - 1))
+    stats[["Rs"]] <- make_row("Rs",
+                              svRs,
+                              stats::pnorm((svRs - ERs) / sqrt(VRs)))
+  }
+  
+  # --- Mp ---
+  if ("Mp" %in% statis) {
+    for (p in Mp) {
+      np   <- trunc(n * p / 100)
+      mask <- df$indj >= np + 2
+      svMp <- sum((df$indj[mask] - np) * df$Ij[mask])
+      q    <- 1 - p/100
+      EMp  <- (n*q - 1) * (n*q + 2) / 4
+      VMp  <- (n*q - 1) * (2*n^2*q^2 + 5*n*q + 6) / 24
+      stats[[paste0("M", p)]] <- make_row(paste0("M", p),
+                                          svMp,
+                                          stats::pnorm((svMp - EMp) / sqrt(VMp)))
+    }
+  }
+  
+  dplyr::bind_rows(stats)
 }
-
-
 
 
 
