@@ -4,7 +4,7 @@
 \alias{samples}
 \title{Generate random samples from the Generalised Lambda Distribution (GLD)}
 \usage{
-samples(lambda1, lambda2, lambda3, lambda4)
+samples(lambda1, lambda2, lambda3, lambda4, ni, B)
 }
 \arguments{
 \item{lambda1}{Location parameter \eqn{\lambda_1} of the GLD.}
@@ -14,6 +14,10 @@ samples(lambda1, lambda2, lambda3, lambda4)
 \item{lambda3}{First shape parameter \eqn{\lambda_3} of the GLD.}
 
 \item{lambda4}{Second shape parameter \eqn{\lambda_4} of the GLD.}
+
+\item{ni}{Sample size per replicate.}
+
+\item{B}{Number of Monte Carlo replicates.}
 }
 \value{
 A numeric matrix of dimension \code{ni x B}, where \code{ni} is the sample size and
@@ -25,14 +29,12 @@ using the inverse CDF method. Each column corresponds to one Monte Carlo replica
 centred at the theoretical median.
 }
 \details{
-The function relies on the global variables \code{ni} (sample size) and \code{B}
-(number of replicates), which are set internally by \code{power_symmetry_test()}.
 The samples are centred by subtracting the theoretical median of the GLD.
 }
 \examples{
 \dontrun{
-ni <- 20; B <- 100
-mat <- samples(lambda1 = 0, lambda2 = 0.1975, lambda3 = 0.1349, lambda4 = 0.1349)
+mat <- samples(lambda1 = 0, lambda2 = 0.1975, lambda3 = 0.1349, lambda4 = 0.1349,
+               ni = 20, B = 100)
 dim(mat)  # 20 x 100
 }
 }
