@@ -14,6 +14,7 @@ power_symmetry_test(
   nsize,
   rep,
   plot = TRUE,
+  median = 0,
   ncores = NULL
 )
 }
@@ -40,6 +41,11 @@ use \code{type = "u"} for unknown median (estimated from the data).}
 
 \item{plot}{Logical. If \code{TRUE} (default), draws the empirical power function.}
 
+\item{median}{Numeric vector with one median value per row in \code{data}. Each element
+is the centre parameter used in \code{symmetry_test()} for the corresponding distribution.
+By default \code{median = 0} (same value applied to all distributions). You can pass a
+column from a pre-computed percentiles table, e.g. \code{median = percentiles$q50}.}
+
 \item{ncores}{Number of cores to use for parallel computation. By default \code{ncores = NULL},
 which automatically uses all available cores minus one.}
 }
@@ -65,7 +71,19 @@ distributions <- tibble::tribble(
   "Case 1A",        0, 0.197454, 0.134915, 0.134915
 )
 P20 <- power_symmetry_test(data = distributions, statis = c("Bk", "Jk"),
-                           Bk = 5, Jk = 6, alpha = 0.05, nsize = 20, rep = 1000, plot = FALSE)
+                           Bk = 5, Jk = 6, alpha = 0.05, nsize = 20, rep = 1000,
+                           plot = FALSE, median = 0)
+
+# Using per-distribution medians from a percentiles table:
+P30 <- power_symmetry_test(data   = distributions,
+                           statis = c("Bk", "Jk", "R", "Rs", "Mp"),
+                           Bk     = c(5, 10),
+                           alpha  = 0.05,
+                           nsize  = 30,
+                           rep    = 3000,
+                           plot   = FALSE,
+                           median = percentiles$q50,
+                           ncores = parallel::detectCores() - 1)
 }
 }
 \references{

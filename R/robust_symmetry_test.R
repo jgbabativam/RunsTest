@@ -107,7 +107,7 @@ robust_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
   compute_reject <- function(stat_name, stat_value, p_value) {
     sv <- stat_value - 1
 
-    if (grepl("^Bk", stat_name)) {
+    if (grepl("^Bk[0-9]", stat_name)) {
       info <- crit[[stat_name]]
       return(ifelse(sv < info$q, 1,
                     ifelse(sv == info$q, info$acc, 0)))
@@ -120,7 +120,6 @@ robust_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
     return(as.integer(p_value < alpha))
   }
 
-  # --- Generar muestras (ni y B pasados explícitamente, sin globals) ---
   lsamples <- purrr::pmap(data[, 2:5], samples, ni = ni, B = B)
 
   # --- Clúster paralelo ---

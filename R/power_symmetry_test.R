@@ -32,6 +32,10 @@
 #' @param nsize Sample size for each Monte Carlo replicate.
 #' @param rep Number of replicates for the Monte Carlo process.
 #' @param plot Logical. If \code{TRUE} (default), draws the empirical power function.
+#' @param median Numeric vector with one median value per row in \code{data}. Each element
+#'   is the centre parameter used in \code{symmetry_test()} for the corresponding distribution.
+#'   By default \code{median = 0} (same value applied to all distributions). You can pass a
+#'   column from a pre-computed percentiles table, e.g. \code{median = percentiles$q50}.
 #' @param ncores Number of cores to use for parallel computation. By default \code{ncores = NULL},
 #'   which automatically uses all available cores minus one.
 #' @references
@@ -44,15 +48,40 @@
 #'   "Case 1A",        0, 0.197454, 0.134915, 0.134915
 #' )
 #' P20 <- power_symmetry_test(data = distributions, statis = c("Bk", "Jk"),
-#'                            Bk = 5, Jk = 6, alpha = 0.05, nsize = 20, rep = 1000, plot = FALSE)
+#'                            Bk = 5, Jk = 6, alpha = 0.05, nsize = 20, rep = 1000,
+#'                            plot = FALSE, median = 0)
+#'
+#' # Using per-distribution medians from a percentiles table:
+#' P30 <- power_symmetry_test(data   = distributions,
+#'                            statis = c("Bk", "Jk", "R", "Rs", "Mp"),
+#'                            Bk     = c(5, 10),
+#'                            alpha  = 0.05,
+#'                            nsize  = 30,
+#'                            rep    = 3000,
+#'                            plot   = FALSE,
+#'                            median = percentiles$q50,
+#'                            ncores = parallel::detectCores() - 1)
 #' }
 
 power_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
                                 Bk = 5, Jk = 6, type = "k",
-                                alpha = 0.05, nsize, rep, plot = TRUE, ncores = NULL) {
+                                alpha = 0.05, nsize, rep, plot = TRUE,
+                                median = 0,
+                                ncores = NULL) {
 
   ni <- nsize
   B  <- rep
+  n_dist <- nrow(data)
+
+  # --- Expandir median a un vector de longitud n_dist ---
+  if (length(median) == 1L) {
+    median_vec <- rep(median, n_dist)
+  } else if (length(median) == n_dist) {
+    median_vec <- as.numeric(median)
+  } else {
+    stop("`median` must be either a single value or a numeric vector with one ",
+         "element per row in `data` (", n_dist, " rows).")
+  }
 
   # --- Número de cores automático si no se especifica ---
   if (is.null(ncores)) ncores <- max(1L, parallel::detectCores() - 1L)
@@ -78,7 +107,7 @@ power_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
   compute_reject <- function(stat_name, stat_value, p_value) {
     sv <- stat_value - 1
 
-    if (grepl("^Bk", stat_name)) {
+    if (grepl("^Bk[0-9]", stat_name)) {
       info <- crit[[stat_name]]
       return(ifelse(sv < info$q, 1,
                     ifelse(sv == info$q, info$acc, 0)))
@@ -88,10 +117,10 @@ power_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
       return(ifelse(sv < info$q, 1,
                     ifelse(sv == info$q, info$acc, 0)))
     }
+    # Bkc, Jk*, Mp* — rechazo directo por p-valor
     return(as.integer(p_value < alpha))
   }
 
-  # --- Generar muestras (ni y B pasados explícitamente, sin globals) ---
   lsamples <- purrr::pmap(data[, 2:5], samples, ni = ni, B = B)
 
   # --- Clúster paralelo ---
@@ -100,7 +129,8 @@ power_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
 
   parallel::clusterExport(cl,
                           varlist = c("symmetry_test", "statis", "Bk", "Jk", "type",
-                                      "alpha", "ni", "B", "crit", "compute_reject"),
+                                      "alpha", "ni", "B", "crit", "compute_reject",
+                                      "median_vec"),
                           envir = environment())
   parallel::clusterEvalQ(cl, {
     library(dplyr)
@@ -108,10 +138,14 @@ power_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
   })
 
   # --- Paralelizado por distribución ---
-  outPower <- parallel::parLapply(cl, lsamples, function(x) {
+  # Se pasa el índice i junto con las muestras para recuperar la mediana correcta
+  outPower <- parallel::parLapply(cl, seq_along(lsamples), function(i) {
+
+    x   <- lsamples[[i]]
+    med <- median_vec[[i]]   # mediana específica de esta distribución
 
     result <- apply(x, 2, function(y) {
-      symmetry_test(y, statis = statis, Bk = Bk, Jk = Jk, type = type)
+      symmetry_test(y, statis = statis, Bk = Bk, Jk = Jk, type = type, median = med)
     })
 
     dplyr::bind_rows(result) %>%
