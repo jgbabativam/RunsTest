@@ -15,25 +15,25 @@
 #' @param lambda2 Scale parameter \eqn{\lambda_2} of the GLD.
 #' @param lambda3 First shape parameter \eqn{\lambda_3} of the GLD.
 #' @param lambda4 Second shape parameter \eqn{\lambda_4} of the GLD.
+#' @param ni Sample size per replicate.
+#' @param B Number of Monte Carlo replicates.
 #' @details
-#' The function relies on the global variables \code{ni} (sample size) and \code{B}
-#' (number of replicates), which are set internally by \code{power_symmetry_test()}.
 #' The samples are centred by subtracting the theoretical median of the GLD.
 #' @examples
 #' \dontrun{
-#' ni <- 20; B <- 100
-#' mat <- samples(lambda1 = 0, lambda2 = 0.1975, lambda3 = 0.1349, lambda4 = 0.1349)
+#' mat <- samples(lambda1 = 0, lambda2 = 0.1975, lambda3 = 0.1349, lambda4 = 0.1349,
+#'                ni = 20, B = 100)
 #' dim(mat)  # 20 x 100
 #' }
-
-samples <- function(lambda1, lambda2, lambda3, lambda4){
-  u <-  replicate(B, stats::runif(ni))
-  xstar <-  lambda1 + ((u^lambda3 - (1-u)^lambda4)/lambda2)
-  med <- lambda1 + (0.5^lambda3 - (1-0.5)^lambda4)/lambda2
-  x <- xstar - med
+samples <- function(lambda1, lambda2, lambda3, lambda4, ni, B){
+  u      <- replicate(B, stats::runif(ni))
+  xstar  <- lambda1 + ((u^lambda3 - (1-u)^lambda4) / lambda2)
+  med    <- lambda1 + (0.5^lambda3 - (1-0.5)^lambda4) / lambda2
+  x      <- xstar - med
   return(x)
 }
 
+#' @keywords internal
 Power.plot <- function(df, n){
   tmp <- df %>%
     pivot_longer(-case, names_to = "statistic", values_to = "power") %>%
@@ -50,10 +50,11 @@ Power.plot <- function(df, n){
                    axis.title   = ggplot2::element_text(face = "bold", size = 11))
 }
 
-samplesq <- function(lambda1, lambda2, lambda3, lambda4){
-  u <-  replicate(B, stats::runif(ni))
-  xstar <-  lambda1 + ((u^lambda3 - (1-u)^lambda4)/lambda2)
-  q <- lambda1 + (pti^lambda3 - (1-pti)^lambda4)/lambda2
-  x <- xstar - q
+#' @keywords internal
+samplesq <- function(lambda1, lambda2, lambda3, lambda4, ni, B, pti){
+  u      <- replicate(B, stats::runif(ni))
+  xstar  <- lambda1 + ((u^lambda3 - (1-u)^lambda4) / lambda2)
+  q      <- lambda1 + (pti^lambda3 - (1-pti)^lambda4) / lambda2
+  x      <- xstar - q
   return(x)
 }

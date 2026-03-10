@@ -50,13 +50,13 @@
 power_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
                                 Bk = 5, Jk = 6, type = "k",
                                 alpha = 0.05, nsize, rep, plot = TRUE, ncores = NULL) {
-  
+
   ni <- nsize
   B  <- rep
-  
+
   # --- Número de cores automático si no se especifica ---
   if (is.null(ncores)) ncores <- max(1L, parallel::detectCores() - 1L)
-  
+
   # --- Precalcular valores críticos UNA sola vez (fuera de las réplicas) ---
   crit <- list()
   if ("Bk" %in% statis) {
@@ -73,11 +73,11 @@ power_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
       stats::dbinom(qr, ni - 1, 0.5)
     crit[["R"]] <- list(q = qr, acc = acc)
   }
-  
-  # --- Función de rechazo vectorizada (sin ifelse anidados) ---
+
+  # --- Función de rechazo vectorizada ---
   compute_reject <- function(stat_name, stat_value, p_value) {
-    sv <- stat_value - 1   # valor original sin el +1
-    
+    sv <- stat_value - 1
+
     if (grepl("^Bk", stat_name)) {
       info <- crit[[stat_name]]
       return(ifelse(sv < info$q, 1,
@@ -88,47 +88,43 @@ power_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
       return(ifelse(sv < info$q, 1,
                     ifelse(sv == info$q, info$acc, 0)))
     }
-    # Para Jk, Rs, Mp: usar directamente p.value
     return(as.integer(p_value < alpha))
   }
-  
-  # --- Generar muestras ---
-  lsamples <- data[, 2:5] %>% purrr::pmap(samples)
-  
+
+  # --- Generar muestras (ni y B pasados explícitamente, sin globals) ---
+  lsamples <- purrr::pmap(data[, 2:5], samples, ni = ni, B = B)
+
   # --- Clúster paralelo ---
   cl <- parallel::makeCluster(ncores)
   on.exit(parallel::stopCluster(cl), add = TRUE)
-  
+
   parallel::clusterExport(cl,
                           varlist = c("symmetry_test", "statis", "Bk", "Jk", "type",
-                                      "alpha", "ni", "crit", "compute_reject"),
+                                      "alpha", "ni", "B", "crit", "compute_reject"),
                           envir = environment())
   parallel::clusterEvalQ(cl, {
     library(dplyr)
     library(randtests)
   })
-  
+
   # --- Paralelizado por distribución ---
   outPower <- parallel::parLapply(cl, lsamples, function(x) {
-    
-    # Todas las réplicas de una distribución juntas
+
     result <- apply(x, 2, function(y) {
       symmetry_test(y, statis = statis, Bk = Bk, Jk = Jk, type = type)
     })
-    
+
     dplyr::bind_rows(result) %>%
       group_by(stat) %>%
       mutate(reject = compute_reject(stat[1], stat.value, p.value)) %>%
       summarise(power = mean(reject), .groups = "drop") %>%
       tidyr::pivot_wider(names_from = stat, values_from = power)
   })
-  
+
   Power <- dplyr::bind_rows(outPower) %>%
     cbind(data[, "case"])
-  
+
   if (plot) print(Power.plot(Power, ni))
-  
+
   return(Power)
 }
-
-
