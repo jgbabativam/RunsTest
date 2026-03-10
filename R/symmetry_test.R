@@ -88,9 +88,14 @@ symmetry_test <- function(x, statis = c("Bk", "Jk", "R", "Rs", "Mp", "Bkc"), typ
     svBkc    <- sum(sub$Ij)
     n1       <- sum(sub$si);  n0 <- nrow(sub) - n1
     stat.val <- svBkc + 1
-    stats[["Bkc"]] <- make_row("Bkc",
-                               stat.val,
-                               sum(druns(seq_len(stat.val) - 1, n1, n0)))
+    # Cuando todos los signos son iguales (n1=0 o n0=0), R*=1 con probabilidad 1:
+    # el único run posible es 1, así que p(R* <= obs) = 1 → no se rechaza H0
+    if (n1 == 0L || n0 == 0L) {
+      pval_bkc <- 1
+    } else {
+      pval_bkc <- sum(druns(seq_len(stat.val) - 1, n1, n0))
+    }
+    stats[["Bkc"]] <- make_row("Bkc", stat.val, pval_bkc)
   }
   
   # --- Jk (múltiples cortes) ---
