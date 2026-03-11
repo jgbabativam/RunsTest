@@ -104,9 +104,12 @@ robust_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
   }
 
   # --- Función de rechazo vectorizada ---
-  compute_reject <- function(stat_name, stat_value, p_value) {
+  # Bkc: no tiene valor crítico fijo — depende de n1 y n0 de cada muestra.
+  # symmetry_test() devuelve esas columnas; aqui se usa para la aleatorizacion condicional.
+  compute_reject <- function(stat_name, stat_value, p_value, n1 = NA, n0 = NA) {
     sv <- stat_value - 1
 
+    # Bk5, Bk10, … — valor crítico binomial precalculado
     if (grepl("^Bk[0-9]", stat_name)) {
       info <- crit[[stat_name]]
       return(ifelse(sv < info$q, 1,
@@ -117,6 +120,22 @@ robust_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
       return(ifelse(sv < info$q, 1,
                     ifelse(sv == info$q, info$acc, 0)))
     }
+    if (stat_name == "Bkc") {
+      # Aleatorizacion condicional muestra a muestra:
+      #   q_i   = mayor r tal que P(R* <= r | n1_i, n0_i) <= alpha
+      #   acc_i = [alpha - P(R* <= q_i-1 | n1_i, n0_i)] / P(R* = q_i | n1_i, n0_i)
+      return(mapply(function(s, n1i, n0i) {
+        if (is.na(n1i) || is.na(n0i) || n1i == 0L || n0i == 0L) return(0)
+        r_vals <- seq_len(n1i + n0i)
+        probs  <- randtests::druns(r_vals, n1i, n0i)
+        cdf    <- cumsum(probs)
+        qi     <- suppressWarnings(max(which(cdf <= alpha)))
+        if (qi == 0 || is.infinite(qi)) return(0)
+        acci   <- (alpha - cdf[qi]) / probs[qi + 1]
+        ifelse(s < qi, 1, ifelse(s == qi, acci, 0))
+      }, sv, n1, n0))
+    }
+    # Jk*, Rs, Mp* — rechazo directo por p-valor
     return(as.integer(p_value < alpha))
   }
 
@@ -149,7 +168,7 @@ robust_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
 
     dplyr::bind_rows(result) %>%
       group_by(stat) %>%
-      mutate(reject = compute_reject(stat[1], stat.value, p.value)) %>%
+      mutate(reject = compute_reject(stat[1], stat.value, p.value, n1, n0)) %>%
       summarise(power = mean(reject), .groups = "drop") %>%
       tidyr::pivot_wider(names_from = stat, values_from = power)
   })

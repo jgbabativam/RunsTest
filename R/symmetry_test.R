@@ -44,7 +44,7 @@
 
 
 symmetry_test <- function(x, statis = c("Bk", "Jk", "R", "Rs", "Mp", "Bkc"), type = "k",
-                            Bk = 5, Jk = 6, Bkc = 11, Mp = c(10, 20, 25), median = 0) {
+                          Bk = 5, Jk = 6, Mp = c(10, 20, 25), median = 0) {
   
   if (type == "u") median <- median(x)
   
@@ -62,10 +62,12 @@ symmetry_test <- function(x, statis = c("Bk", "Jk", "R", "Rs", "Mp", "Bkc"), typ
   
   df <- data.frame(indj = indj, j = j, si = si, Ij = Ij)
   
-  make_row <- function(stat, stat.value, p.value) {
+  make_row <- function(stat, stat.value, p.value, n1 = NA_integer_, n0 = NA_integer_) {
     data.frame(stat       = stat,
                stat.value = round(stat.value, 1),
                p.value    = round(p.value, 4),
+               n1         = n1,
+               n0         = n0,
                stringsAsFactors = FALSE)
   }
   
@@ -82,20 +84,20 @@ symmetry_test <- function(x, statis = c("Bk", "Jk", "R", "Rs", "Mp", "Bkc"), typ
     }
   }
   
-  # --- Bkc ---
+  # --- Bkc: mismo estadistico que R, p-valor condicional, n1/n0 propagados ---
+  # n1 y n0 se incluyen en el data.frame para que compute_reject() en
+  # power_symmetry_test / robust_symmetry_test pueda aleatorizar muestra a muestra.
   if ("Bkc" %in% statis) {
-    sub      <- df[df$j <= Bkc, ]
-    svBkc    <- sum(sub$Ij)
-    n1       <- sum(sub$si);  n0 <- nrow(sub) - n1
+    svBkc    <- sum(df$Ij[df$indj >= 2])   # identico a svR
+    n1_bkc   <- sum(df$si)                  # signos positivos
+    n0_bkc   <- n - n1_bkc                  # signos negativos
     stat.val <- svBkc + 1
-    # Cuando todos los signos son iguales (n1=0 o n0=0), R*=1 con probabilidad 1:
-    # el único run posible es 1, así que p(R* <= obs) = 1 → no se rechaza H0
-    if (n1 == 0L || n0 == 0L) {
+    if (n1_bkc == 0L || n0_bkc == 0L) {
       pval_bkc <- 1
     } else {
-      pval_bkc <- sum(druns(seq_len(stat.val) - 1, n1, n0))
+      pval_bkc <- sum(druns(seq_len(stat.val), n1_bkc, n0_bkc))
     }
-    stats[["Bkc"]] <- make_row("Bkc", stat.val, pval_bkc)
+    stats[["Bkc"]] <- make_row("Bkc", stat.val, pval_bkc, n1 = n1_bkc, n0 = n0_bkc)
   }
   
   # --- Jk (múltiples cortes) ---
