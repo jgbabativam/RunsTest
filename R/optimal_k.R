@@ -23,6 +23,7 @@
 #' The criterion balances stability of the conditional distribution
 #' (under worst-case median misspecification) against power retention.
 #'
+#' @author Giovany Babativa <jgbabativam@@unal.edu.co>
 #' @param n      Sample size (positive integer).
 #' @param q      Upper quantile of maximum misspecification considered
 #'   (default 0.70). Must satisfy \code{0 < q < 1}.
@@ -105,6 +106,7 @@ optimal_k <- function(n, q = 0.70, c = 5, gamma = 0.60, verbose = FALSE) {
 #' Applies \code{\link{optimal_k}} to each element of \code{n_vec} and
 #' returns a summary \code{data.frame}.
 #'
+#' @author Giovany Babativa <jgbabativam@@unal.edu.co>
 #' @param n_vec  Integer vector of sample sizes.
 #' @param q      Upper quantile of maximum misspecification (default 0.70).
 #' @param c      Minimum required \eqn{E[n_{1k}]} (default 5).

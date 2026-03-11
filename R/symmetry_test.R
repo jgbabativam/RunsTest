@@ -15,7 +15,7 @@
 #' R: McWiliams, P. (1990),
 #' Rs: Baklizi, A. (2003)
 #' Mp: Modarres and Gastwirth (1996).
-#' @author Giovany Babativa <gbabativam@@gmail.com>
+#' @author Giovany Babativa <jgbabativam@@unal.edu.co>
 #' @param x vector of numeric information.
 #' @param statis Test statistic to be used. By default \code{statis = c("Bk", "Jk")}.
 #'   Available options are \code{"Bk"}, \code{"Ck"}, \code{"Bkc"}, \code{"Jk"}, \code{"R"}, \code{"Rs"}, \code{"Mp"}.
