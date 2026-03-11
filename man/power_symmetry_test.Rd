@@ -8,6 +8,7 @@ power_symmetry_test(
   data,
   statis = c("Bk", "Jk", "R", "Rs", "Mp"),
   Bk = 5,
+  Ck = 10,
   Jk = 6,
   type = "k",
   alpha = 0.05,
@@ -22,10 +23,13 @@ power_symmetry_test(
 \item{data}{data frame or tribble with the case name and the four lambda parameters of the GLD.}
 
 \item{statis}{Test statistic to be used. By default \code{statis = c("Bk", "Jk")}.
-Available options are \code{"Bk"}, \code{"Bkc"}, \code{"Jk"}, \code{"R"}, \code{"Rs"}, \code{"Mp"}.}
+Available options are \code{"Bk"}, \code{"Bkc"}, \code{"Ck"}, \code{"Jk"}, \code{"R"}, \code{"Rs"}, \code{"Mp"}.}
 
 \item{Bk}{Integer or vector of integers with the cut-off parameter(s) for the \eqn{B_k} statistic.
 By default \code{Bk = 5}. Multiple values can be supplied, e.g. \code{Bk = c(5, 6, 7)}.}
+
+\item{Ck}{Integer (or vector) with the cut-off(s) for the \eqn{C_k} statistic (conditional Bk).
+Requires \eqn{k \geq 10} for reliable size control. By default \code{Ck = 10}.}
 
 \item{Jk}{Integer or vector of integers with the cut-off parameter(s) for the \eqn{J_k} statistic.
 By default \code{Jk = 6}. Multiple values can be supplied, e.g. \code{Jk = c(4, 6, 8)}.}

@@ -21,9 +21,11 @@
 #' @author Giovany Babativa <jgbabativam@@unal.edu.co>
 #' @param data data frame or tribble with the case name and the four lambda parameters of the GLD.
 #' @param statis Test statistic to be used. By default \code{statis = c("Bk", "Jk")}.
-#'   Available options are \code{"Bk"}, \code{"Bkc"}, \code{"Jk"}, \code{"R"}, \code{"Rs"}, \code{"Mp"}.
+#'   Available options are \code{"Bk"}, \code{"Bkc"}, \code{"Ck"}, \code{"Jk"}, \code{"R"}, \code{"Rs"}, \code{"Mp"}.
 #' @param Bk Integer or vector of integers with the cut-off parameter(s) for the \eqn{B_k} statistic.
 #'   By default \code{Bk = 5}. Multiple values can be supplied, e.g. \code{Bk = c(5, 6, 7)}.
+#' @param Ck Integer (or vector) with the cut-off(s) for the \eqn{C_k} statistic (conditional Bk).
+#'   Requires \eqn{k \geq 10} for reliable size control. By default \code{Ck = 10}.
 #' @param Jk Integer or vector of integers with the cut-off parameter(s) for the \eqn{J_k} statistic.
 #'   By default \code{Jk = 6}. Multiple values can be supplied, e.g. \code{Jk = c(4, 6, 8)}.
 #' @param type Type of test. When the test is with known median, select \code{type = "k"};
@@ -48,7 +50,7 @@
 #'   "Case 1A",        0, 0.197454, 0.134915, 0.134915
 #' )
 #' P20 <- power_symmetry_test(data = distributions, statis = c("Bk", "Jk"),
-#'                            Bk = 5, Jk = 6, alpha = 0.05, nsize = 20, rep = 1000,
+#'                            Bk = 5, Ck = 10, Jk = 6, alpha = 0.05, nsize = 20, rep = 1000,
 #'                            plot = FALSE, median = 0)
 #'
 #' # Using per-distribution medians from a percentiles table:
@@ -64,7 +66,7 @@
 #' }
 
 robust_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
-                                Bk = 5, Jk = 6, type = "k",
+                                Bk = 5, Ck = 10, Jk = 6, type = "k",
                                 alpha = 0.05, nsize, rep, plot = TRUE,
                                 median = 0,
                                 ncores = NULL) {
@@ -104,36 +106,35 @@ robust_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
   }
 
   # --- Función de rechazo vectorizada ---
-  # Bkc: no tiene valor crítico fijo — depende de n1 y n0 de cada muestra.
-  # symmetry_test() devuelve esas columnas; aqui se usa para la aleatorizacion condicional.
   compute_reject <- function(stat_name, stat_value, p_value, n1 = NA, n0 = NA) {
     sv <- stat_value - 1
 
-    # Bk5, Bk10, … — valor crítico binomial precalculado
+    # Bk — valor crítico binomial precalculado, test aleatorizado
     if (grepl("^Bk[0-9]", stat_name)) {
       info <- crit[[stat_name]]
       return(ifelse(sv < info$q, 1,
                     ifelse(sv == info$q, info$acc, 0)))
     }
+    # R — valor crítico binomial precalculado, test aleatorizado
     if (stat_name == "R") {
       info <- crit[["R"]]
       return(ifelse(sv < info$q, 1,
                     ifelse(sv == info$q, info$acc, 0)))
     }
-    if (stat_name == "Bkc") {
-      # Aleatorizacion condicional muestra a muestra:
-      #   q_i   = mayor r tal que P(R* <= r | n1_i, n0_i) <= alpha
-      #   acc_i = [alpha - P(R* <= q_i-1 | n1_i, n0_i)] / P(R* = q_i | n1_i, n0_i)
-      return(mapply(function(s, n1i, n0i) {
+    # Bkc y Ck — aleatorización condicional muestra a muestra sobre (n1, n0)
+    # druns es base-0: druns(x, n1, n0) = P(R* = x+1)
+    if (stat_name == "Bkc" || grepl("^Ck[0-9]", stat_name)) {
+      return(mapply(function(rv, n1i, n0i) {
         if (is.na(n1i) || is.na(n0i) || n1i == 0L || n0i == 0L) return(0)
         r_vals <- seq_len(n1i + n0i)
-        probs  <- randtests::druns(r_vals, n1i, n0i)
+        probs  <- randtests::druns(r_vals - 1, n1i, n0i)
         cdf    <- cumsum(probs)
-        qi     <- suppressWarnings(max(which(cdf <= alpha)))
-        if (qi == 0 || is.infinite(qi)) return(0)
-        acci   <- (alpha - cdf[qi]) / probs[qi + 1]
-        ifelse(s < qi, 1, ifelse(s == qi, acci, 0))
-      }, sv, n1, n0))
+        qi_idx <- suppressWarnings(max(which(cdf <= alpha)))
+        if (!is.finite(qi_idx) || qi_idx == 0) return(0)
+        qi   <- r_vals[qi_idx]
+        acci <- (alpha - cdf[qi_idx]) / probs[qi_idx + 1]
+        ifelse(rv < qi, 1, ifelse(rv == qi, acci, 0))
+      }, stat_value, n1, n0))
     }
     # Jk*, Rs, Mp* — rechazo directo por p-valor
     return(as.integer(p_value < alpha))
@@ -146,7 +147,7 @@ robust_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
   on.exit(parallel::stopCluster(cl), add = TRUE)
 
   parallel::clusterExport(cl,
-                          varlist = c("symmetry_test", "statis", "Bk", "Jk", "type",
+                          varlist = c("symmetry_test", "statis", "Bk", "Ck", "Jk", "type",
                                       "alpha", "ni", "B", "crit", "compute_reject",
                                       "median_vec"),
                           envir = environment())
@@ -163,7 +164,7 @@ robust_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
     med <- median_vec[[i]]   # mediana específica de esta distribución
 
     result <- apply(x, 2, function(y) {
-      symmetry_test(y, statis = statis, Bk = Bk, Jk = Jk, type = type, median = med)
+      symmetry_test(y, statis = statis, Bk = Bk, Ck = Ck, Jk = Jk, type = type, median = med)
     })
 
     dplyr::bind_rows(result) %>%

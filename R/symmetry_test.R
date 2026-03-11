@@ -18,11 +18,16 @@
 #' @author Giovany Babativa <gbabativam@@gmail.com>
 #' @param x vector of numeric information.
 #' @param statis Test statistic to be used. By default \code{statis = c("Bk", "Jk")}.
-#'   Available options are \code{"Bk"}, \code{"Bkc"}, \code{"Jk"}, \code{"R"}, \code{"Rs"}, \code{"Mp"}.
+#'   Available options are \code{"Bk"}, \code{"Ck"}, \code{"Bkc"}, \code{"Jk"}, \code{"R"}, \code{"Rs"}, \code{"Mp"}.
 #' @param Bk Integer or vector of integers with the cut-off parameter(s) for the \eqn{B_k} statistic.
 #'   By default \code{Bk = 5}. Multiple values can be supplied, e.g. \code{Bk = c(5, 6, 7)}.
 #' @param Jk Integer or vector of integers with the cut-off parameter(s) for the \eqn{J_k} statistic.
 #'   By default \code{Jk = 6}. Multiple values can be supplied, e.g. \code{Jk = c(4, 6, 8)}.
+#' @param Ck Integer (or vector) with the cut-off(s) for the \eqn{C_k} statistic.
+#'   \eqn{C_k} is the conditional version of \eqn{B_k}: it uses the runs distribution
+#'   conditioned on \eqn{(n_{1k}, n_{0k})} among the \eqn{k} most extreme observations,
+#'   making it robust to misspecified medians. Requires \eqn{k \\geq 10} for reliable
+#'   size control. By default \code{Ck = 10}.
 #' @param Bkc Integer with the cut-off parameter for the \eqn{B_{kc}} statistic, which uses
 #'   the conditional runs distribution. By default \code{Bkc = 11}.
 #' @param Mp Numeric vector with percentile trimming values (in percent) for the \eqn{M_p} statistic.
@@ -43,8 +48,8 @@
 #' (MyTest2 <- symmetry_test(x, statis = c("Mp", "Jk"), Jk = 6, Mp = c(10, 20, 25)))
 
 
-symmetry_test <- function(x, statis = c("Bk", "Jk", "R", "Rs", "Mp", "Bkc"), type = "k",
-                          Bk = 5, Jk = 6, Mp = c(10, 20, 25), median = 0) {
+symmetry_test <- function(x, statis = c("Bk", "Jk", "R", "Rs", "Mp", "Bkc", "Ck"), type = "k",
+                          Bk = 5, Ck = 10, Jk = 6, Mp = c(10, 20, 25), median = 0) {
   
   if (type == "u") median <- median(x)
   
@@ -84,9 +89,26 @@ symmetry_test <- function(x, statis = c("Bk", "Jk", "R", "Rs", "Mp", "Bkc"), typ
     }
   }
   
-  # --- Bkc: mismo estadistico que R, p-valor condicional, n1/n0 propagados ---
-  # n1 y n0 se incluyen en el data.frame para que compute_reject() en
-  # power_symmetry_test / robust_symmetry_test pueda aleatorizar muestra a muestra.
+
+  # --- Ck (Bk condicional — versión robusta de Bk) ---
+
+  if ("Ck" %in% statis) {
+    for (k in Ck) {
+      mask     <- df$j <= k
+      svCk     <- sum(df$Ij[mask & df$indj >= 2])  # excluye Ij[1], igual que Bkc
+      n1k      <- sum(df$si[mask])            # signos positivos entre los k más cercanos
+      n0k      <- k - n1k                     # signos negativos entre los k más cercanos
+      stat.val <- svCk + 1                  # número de runs
+      if (n1k == 0L || n0k == 0L) {
+        pval_ck <- 1
+      } else {
+        pval_ck <- sum(druns(seq_len(stat.val) - 1, n1k, n0k))
+      }
+      stats[[paste0("Ck", k)]] <- make_row(paste0("Ck", k), stat.val, pval_ck, n1 = n1k, n0 = n0k)
+    }
+  }
+  # --- Bkc: mismo estadistico que R, p-valor por distribucion condicional de runs ---
+
   if ("Bkc" %in% statis) {
     svBkc    <- sum(df$Ij[df$indj >= 2])   # identico a svR
     n1_bkc   <- sum(df$si)                  # signos positivos
@@ -95,7 +117,7 @@ symmetry_test <- function(x, statis = c("Bk", "Jk", "R", "Rs", "Mp", "Bkc"), typ
     if (n1_bkc == 0L || n0_bkc == 0L) {
       pval_bkc <- 1
     } else {
-      pval_bkc <- sum(druns(seq_len(stat.val), n1_bkc, n0_bkc))
+      pval_bkc <- sum(druns(seq_len(stat.val) - 1, n1_bkc, n0_bkc)) # P(R* <= stat.val | n1, n0)
     }
     stats[["Bkc"]] <- make_row("Bkc", stat.val, pval_bkc, n1 = n1_bkc, n0 = n0_bkc)
   }
