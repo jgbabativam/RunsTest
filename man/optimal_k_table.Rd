@@ -27,3 +27,6 @@ returns a summary \code{data.frame}.
 \examples{
 print(optimal_k_table(c(20, 30, 50, 100)), row.names = FALSE)
 }
+\author{
+Giovany Babativa <jgbabativam@unal.edu.co>
+}

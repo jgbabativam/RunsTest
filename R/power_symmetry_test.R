@@ -93,8 +93,8 @@ power_symmetry_test <- function(data, statis = c("Bk", "Jk", "R", "Rs", "Mp"),
   if ("Bk" %in% statis) {
     for (k in Bk) {
       qb  <- stats::qbinom(alpha, k, 0.5)
-      acc <- (alpha - sum(stats::dbinom(0:(qb - 1), k, 0.5))) /
-        stats::dbinom(qb, k, 0.5)
+      sum_antes <- if (qb == 0) 0 else sum(stats::dbinom(0:(qb - 1), k, 0.5))
+      acc <- (alpha - sum_antes) / stats::dbinom(qb, k, 0.5)
       crit[[paste0("Bk", k)]] <- list(q = qb, acc = acc)
     }
   }

@@ -57,3 +57,6 @@ Baklizi, A. (2003). A conditional distribution free runs test for
 symmetry. \emph{Journal of Nonparametric Statistics}, \bold{15}(6),
 713--718. \doi{10.1080/10485250310001634737}
 }
+\author{
+Giovany Babativa <jgbabativam@unal.edu.co>
+}
