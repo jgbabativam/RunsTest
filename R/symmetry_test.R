@@ -96,8 +96,8 @@ symmetry_test <- function(x, statis = c("Bk", "Jk", "R", "Rs", "Mp", "Bkc", "Ck"
     for (k in Ck) {
       mask     <- df$j <= k
       svCk     <- sum(df$Ij[mask & df$indj >= 2])  # excluye Ij[1], igual que Bkc
-      n1k      <- sum(df$si[mask])            # signos positivos entre los k más cercanos
-      n0k      <- k - n1k                     # signos negativos entre los k más cercanos
+      n1k      <- sum(df$si[mask]) + df$si[1]         # signos positivos entre los k más cercanos
+      n0k      <- k - n1k + 1                     # signos negativos entre los k más cercanos
       stat.val <- svCk + 1                  # número de runs
       if (n1k == 0L || n0k == 0L) {
         pval_ck <- 1
