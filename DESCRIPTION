@@ -1,7 +1,7 @@
-Package: RankRunsTest
+Package: TrimmedTest
 Type: Package
-Title: Nonparametric test based on rank and runs 
-Version: 0.2.0
+Title: Trimmed Nonparametric Tests Based on Runs and Ranks  
+Version: 1.0.0
 Authors@R: 
     person(given = "Giovany",
            family = "Babativa",
@@ -10,16 +10,16 @@ Authors@R:
            comment = c(ORCID = "https://orcid.org/0000-0002-4989-7459"))
 Maintainer: The package maintainer <jgbabativam@unal.edu.co>
 Depends:
-    R (>= 3.5)
+    R (>= 4.1)
 Imports:
     dplyr,
-    ggplot2 (>= 3.0.0),
+    ggplot2 (>= 4.0.2),
     ggpubr,
     tidyr,
     randtests,
     purrr,
     parallel
-Description: RankRunsTest is a package that implements of a large number of tests for location, scale and symmetry test, with possibility of calculation of empirical power by Monte Carlo techniques. 
+Description: TrimmedTest provides a comprehensive set of trimmed nonparametric tests for location, scale, and symmetry, based on rank and run statistics. It supports the estimation of empirical power and robustness using Monte Carlo simulation. 
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path \"H:\\\\Mi unidad\\\\Packages\\\\RankRunsTest\\\\RankRunsTest\\\\TrimmedTest\" -Recurse | ForEach-Object { $_.FullName } | Sort-Object)",
+      "Bash(Rscript -e \"devtools::check\\(quiet = FALSE\\)\")",
+      "Bash(Rscript -e \"rcmdcheck::rcmdcheck\\('.', args = '--no-manual'\\)\")",
+      "Bash(R CMD build .)",
+      "Bash(R CMD check TrimmedTest_1.0.0.tar.gz --no-manual)",
+      "Read(//h/Mi unidad/Packages/RankRunsTest/RankRunsTest/**)",
+      "Bash(R CMD check TrimmedTest --no-manual --no-build-vignettes)",
+      "Bash(R CMD build TrimmedTest)"
+    ]
+  }
+}

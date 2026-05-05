@@ -1,4 +1,3 @@
-# RunsTest
-RRT: Rank Runs Test
+# TrimmedTest
 
-RankRunsTest is a package that implements of a large number of tests for location, scale and symmetry test, with possibility of calculation of empirical power by Monte Carlo techniques. 
+TrimmedTest implements a collection of robust trimmed nonparametric tests for location, scale, and symmetry based on rank and run statistics, with functionality for estimating empirical power and assessing robustness via Monte Carlo simulation.
