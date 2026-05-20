@@ -8,7 +8,7 @@ Authors@R:
            role = c("aut", "cre"),
            email = "jgbabativam@unal.edu.co",
            comment = c(ORCID = "https://orcid.org/0000-0002-4989-7459"))
-Maintainer: The package maintainer <jgbabativam@unal.edu.co>
+Maintainer: Giovany Babativa <jgbabativam@unal.edu.co>
 Depends:
     R (>= 4.1)
 Imports:
@@ -19,7 +19,7 @@ Imports:
     randtests,
     purrr,
     parallel
-Description: TrimmedTest provides a comprehensive set of trimmed nonparametric tests for location, scale, and symmetry, based on rank and run statistics. It supports the estimation of empirical power and robustness using Monte Carlo simulation. 
+Description: Provides a set of trimmed nonparametric tests for location, scale, and symmetry, based on rank and run statistics. Supports the estimation of empirical power and robustness using Monte Carlo simulation.
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
